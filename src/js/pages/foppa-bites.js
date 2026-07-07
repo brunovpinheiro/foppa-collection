@@ -5,6 +5,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 	initShopNowDialog();
+	initFaqAccordion();
 });
 
 // Dialog "Shop Now": .dialog-shop-foppabites é um <div> comum (não um
@@ -226,4 +227,88 @@ function initTypeSwitcher(dialog, dur) {
 			if (switchTimeline) switchTimeline.kill();
 		},
 	};
+}
+
+// Accordion do FAQ (.faq-list > .faq-item): cada item tem .faq-item_heading
+// (gatilho, role="button" + aria-expanded setados no Designer) e
+// .faq-item_body (painel, já nasce com height:0 + overflow:clip no Designer —
+// a base fechada é 100% Client-First, o JS só anima a abertura/fechamento).
+// Comportamento: clicar num item fechado abre ele e fecha o que estava aberto
+// (só um por vez); clicar no item já aberto apenas fecha. Animação em GSAP:
+// altura do painel (0 → "auto", que o GSAP calcula sozinho) + fade/slide sutil
+// do texto interno, para o conteúdo "surgir" em vez de só esticar o container.
+// O item que já nasce aberto é definido no Designer (aria-expanded="true" no
+// heading, hoje o primeiro item) — o JS só lê esse estado inicial e aplica
+// sem animação (gsap.set, não .to), pra não haver flash fechado→aberto.
+function initFaqAccordion() {
+	const items = Array.from(document.querySelectorAll(".faq-list .faq-item"));
+	if (!items.length || typeof gsap === "undefined") return;
+
+	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const dur = (seconds) => (reduceMotion ? 0.001 : seconds);
+
+	const entries = items
+		.map((item) => {
+			const heading = item.querySelector(".faq-item_heading");
+			const body = item.querySelector(".faq-item_body");
+			const content = body ? body.querySelector(".faq-item_text-block") : null;
+			return heading && body ? { heading, body, content, timeline: null } : null;
+		})
+		.filter(Boolean);
+
+	if (!entries.length) return;
+
+	let openEntry = null;
+
+	entries.forEach((entry) => {
+		const defaultOpen = entry.heading.getAttribute("aria-expanded") === "true";
+		gsap.set(entry.body, { height: defaultOpen ? "auto" : 0 });
+		if (entry.content) gsap.set(entry.content, { autoAlpha: defaultOpen ? 1 : 0, y: defaultOpen ? 0 : -8 });
+		if (defaultOpen) openEntry = entry;
+	});
+
+	const closeEntry = (entry) => {
+		if (entry.timeline) entry.timeline.kill();
+		entry.heading.setAttribute("aria-expanded", "false");
+
+		entry.timeline = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+		if (entry.content) {
+			entry.timeline.to(entry.content, { autoAlpha: 0, y: -8, duration: dur(0.2) }, 0);
+		}
+		entry.timeline.to(entry.body, { height: 0, duration: dur(0.45) }, 0);
+	};
+
+	const openEntryFn = (entry) => {
+		if (entry.timeline) entry.timeline.kill();
+		entry.heading.setAttribute("aria-expanded", "true");
+
+		entry.timeline = gsap.timeline({ defaults: { ease: "power3.out" } });
+		entry.timeline.to(entry.body, { height: "auto", duration: dur(0.5) }, 0);
+		if (entry.content) {
+			entry.timeline.to(entry.content, { autoAlpha: 1, y: 0, duration: dur(0.4) }, dur(0.1));
+		}
+	};
+
+	entries.forEach((entry) => {
+		const toggle = () => {
+			const isOpen = entry.heading.getAttribute("aria-expanded") === "true";
+
+			if (isOpen) {
+				closeEntry(entry);
+				openEntry = null;
+				return;
+			}
+
+			if (openEntry && openEntry !== entry) closeEntry(openEntry);
+			openEntry = entry;
+			openEntryFn(entry);
+		};
+
+		entry.heading.addEventListener("click", toggle);
+		entry.heading.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			event.preventDefault();
+			toggle();
+		});
+	});
 }
