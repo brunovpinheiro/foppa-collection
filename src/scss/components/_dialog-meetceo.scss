@@ -1,0 +1,71 @@
+// ============================================================
+// Foppa — Dialog "Meet CEO" (Client-First: .dialog_meetceo)
+// Fade-up/down no <dialog> + fade in/out no ::backdrop nativo.
+//
+// O Webflow Designer não expõe ::backdrop nem @starting-style,
+// por isso essa animação mora aqui (fora do Designer) e é servida
+// via JSDelivr, conforme padrão do projeto (CLAUDE.md, seção 4).
+//
+// Técnica: transition-behavior: allow-discrete + @starting-style
+// permite animar a abertura/fechamento do <dialog> nativo (que
+// alterna "display" internamente) sem precisar de JS/timers.
+// Suporte: Chrome/Edge 117+, Safari 17.4+, Firefox 129+.
+// ============================================================
+
+$meetceo-duration: 0.32s;
+$meetceo-ease: cubic-bezier(0.16, 1, 0.3, 1);
+$meetceo-offset: 1.5rem;
+
+dialog.dialog_meetceo {
+	opacity: 0;
+	transform: translateY($meetceo-offset);
+	transition:
+		opacity $meetceo-duration $meetceo-ease,
+		transform $meetceo-duration $meetceo-ease,
+		overlay $meetceo-duration $meetceo-ease allow-discrete,
+		display $meetceo-duration $meetceo-ease allow-discrete;
+}
+
+dialog.dialog_meetceo[open] {
+	opacity: 1;
+	transform: translateY(0);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+// Estado inicial da transição de entrada (fade-up).
+@starting-style {
+	dialog.dialog_meetceo[open] {
+		opacity: 0;
+		transform: translateY($meetceo-offset);
+	}
+}
+
+dialog.dialog_meetceo::backdrop {
+	background-color: hsl(0 0% 0% / 0%);
+	transition:
+		background-color $meetceo-duration $meetceo-ease,
+		overlay $meetceo-duration $meetceo-ease allow-discrete,
+		display $meetceo-duration $meetceo-ease allow-discrete;
+}
+
+dialog.dialog_meetceo[open]::backdrop {
+	background-color: hsl(0 0% 0% / 55%);
+}
+
+// Estado inicial da transição de entrada do backdrop (fade-in).
+@starting-style {
+	dialog.dialog_meetceo[open]::backdrop {
+		background-color: hsl(0 0% 0% / 0%);
+	}
+}
+
+// Respeita usuários com preferência por menos movimento.
+@media (prefers-reduced-motion: reduce) {
+	dialog.dialog_meetceo,
+	dialog.dialog_meetceo::backdrop {
+		transition-duration: 1ms;
+	}
+}

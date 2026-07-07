@@ -1,0 +1,16 @@
+// ============================================================
+// Foppa — CSS custom (Client-First)
+// Compila para dist/css/style.min.css → servido via JSDelivr.
+//
+// Client-First: só escreva CSS aqui quando o Designer do Webflow
+// não resolver. Prefira classes utilitárias e a hierarquia core.
+// Trabalhe em rem (1rem = 16px).
+// ============================================================
+
+// Parciais (crie e importe conforme necessário):
+// @use "base/variables";
+// @use "base/reset";
+@use "components/dialog-meetceo";
+@use "components/dialog-shop-foppabites";
+
+// Exemplo de custom code de página fica em src/js/pages/*.js

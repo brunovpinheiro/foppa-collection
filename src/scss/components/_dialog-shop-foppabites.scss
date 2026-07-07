@@ -1,0 +1,31 @@
+// ============================================================
+// Foppa — Dialog "Shop Now" (Client-First: .dialog-shop-foppabites)
+// FOPPA BITES: #btnShopNow abre/fecha #dialogShopNow.
+//
+// Diferente do dialog Meet CEO, aqui o elemento é um <div> comum (não um
+// <dialog> nativo) — o Designer já resolve "display: none" por padrão e o
+// centering (flex) via classe. Abrir/fechar e toda a animação de
+// entrada/saída (overlay + painel + stagger dos elementos internos) rodam
+// 100% em JS com GSAP (src/js/pages/foppa-bites.js).
+//
+// Este arquivo só cobre o que o Designer não expõe: dicas de performance
+// para as camadas animadas e o cursor do gatilho.
+// ============================================================
+
+#btnShopNow {
+	cursor: pointer;
+}
+
+.dialog-shop-foppabites {
+	will-change: opacity;
+}
+
+.dialog-shop-foppabites .shop-foppabites_panel {
+	will-change: opacity, transform;
+}
+
+.dialog-shop-foppabites .shop-foppabites_media,
+.dialog-shop-foppabites .foppabites-type_item,
+.dialog-shop-foppabites .foppabites-option_link {
+	will-change: opacity, transform;
+}
