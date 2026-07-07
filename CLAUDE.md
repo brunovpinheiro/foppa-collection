@@ -503,18 +503,58 @@ classe/elemento alvo (padrão Client-First `interactions-naming`), para facilita
 
 Em produção, servir arquivos versionados pelo **JSDelivr** (CDN gratuito sobre GitHub/npm).
 
+- **Repositório:** `https://github.com/brunovpinheiro/foppa-collection` (branch `main`).
 - **Via GitHub:**
   `https://cdn.jsdelivr.net/gh/USUARIO/REPO@VERSAO/dist/js/common.min.js`
-- **Fixar versão/commit** (evita cache quebrado): use tag/commit hash, não `@latest` em prod.
 - Sempre apontar para os arquivos **minificados** de `dist/` (gerados pelo gulp).
 - **Dev:** apontar para o server local (ex.: `http://127.0.0.1:PORTA/dist/...`) e trocar
   pela URL JSDelivr ao publicar.
 
+### 4.1 Automação (GitHub Actions → purge JSDelivr)
+
+O workflow `.github/workflows/jsdelivr-purge.yml` roda a cada `push` na branch `main` que
+altere algo em `dist/**` e chama a **purge API** do JSDelivr
+(`https://purge.jsdelivr.net/gh/...`) para cada arquivo de `dist/`, forçando o CDN a buscar
+a versão mais recente do GitHub imediatamente (sem esperar o cache de até 12h/7 dias expirar).
+
+Por isso as URLs usam `@main` (branch), **não** tag/commit fixo — a URL final é **estável**
+(não muda a cada deploy) e o conteúdo é atualizado automaticamente pelo Action. Você só
+precisa colar as URLs abaixo nas Custom Code settings do Webflow **uma vez**; deploys
+seguintes (`npm run build` + commit/push) atualizam o conteúdo sozinhos via Action.
+
+### 4.2 URLs finais para colar no Webflow (Custom Code settings)
+
+**CSS (Head, antes do JS):**
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/brunovpinheiro/foppa-collection@main/dist/css/libs.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/brunovpinheiro/foppa-collection@main/dist/css/style.min.css">
+```
+
+**JS global (Footer, depois do GSAP/ScrollTrigger que já estão no Custom Code do site):**
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/brunovpinheiro/foppa-collection@main/dist/js/libs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/brunovpinheiro/foppa-collection@main/dist/js/common.min.js"></script>
+```
+
+**JS por página (Custom Code da página, depois do `common.min.js`):**
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/brunovpinheiro/foppa-collection@main/dist/js/pages/foppa-bites.min.js"></script>
+```
+
+> Ao criar um novo arquivo em `src/js/pages/`, o gulp gera o `.min.js` correspondente em
+> `dist/js/pages/` — a URL segue o mesmo padrão acima, trocando `foppa-bites` pelo nome do
+> arquivo.
+
 **Checklist ao publicar JS/CSS:**
 
 1. `npm run build` (gera `dist/`).
-2. Commit + push (e tag de versão) no repositório GitHub.
-3. Atualizar as URLs JSDelivr nas Custom Code settings do Webflow.
+2. Commit + push na branch `main` do repositório GitHub — o Action de purge do JSDelivr
+   dispara sozinho (ver 4.1).
+3. Confirme que as URLs acima já estão nas Custom Code settings do Webflow (só precisa
+   fazer isso uma vez, pois a URL `@main` não muda).
 4. Publicar o site no Webflow.
 
 ---

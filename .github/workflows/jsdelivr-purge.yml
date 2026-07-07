@@ -1,0 +1,42 @@
+name: Purge JSDelivr Cache
+
+# Sempre que a branch main é atualizada e algo em dist/ muda, força o JSDelivr
+# a buscar a versão mais recente dos arquivos no GitHub (bypassa o cache do CDN).
+# As URLs de produção usam @main (branch), então não é preciso trocar links no
+# Webflow a cada deploy — ver CLAUDE.md, seção 4.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "dist/**"
+  workflow_dispatch: {}
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Purge JSDelivr cache for dist files
+        run: |
+          set -e
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+
+          echo "Purgando cache do JSDelivr para ${REPO}@${BRANCH}"
+
+          status=0
+          while IFS= read -r file; do
+            url="https://purge.jsdelivr.net/gh/${REPO}@${BRANCH}/${file}"
+            code=$(curl -s -o /tmp/purge_response.json -w "%{http_code}" "$url")
+            echo "[$code] $url"
+            if [ "$code" != "200" ]; then
+              echo "  -> resposta: $(cat /tmp/purge_response.json)"
+              status=1
+            fi
+          done < <(find dist -type f | sed 's#^\./##')
+
+          exit $status
