@@ -215,6 +215,29 @@ Nesses casos o código vive **local** (`src/`) e é publicado via JSDelivr — n
   - Clicar em "Sobre" ou "Ingredientes" com o Shop Now aberto fecha o dialogo antes de
     seguir a navegação normal dessas abas (scroll de seção) — evita o dialogo ficar aberto
     por cima do conteúdo pra onde a aba está levando.
+  - **Scroll responsivo (telas desktop pequenas, tablet e mobile):** só o overlay
+    `.dialog-shop-foppabites` rola (`overflow-y: auto` + `overflow-x: hidden`) — o
+    `.shop-foppabites_panel` **não tem** `max-height`/`overflow` próprios, fica com altura
+    livre (`height: auto`, cresce pro tamanho do conteúdo). Ter scroll nos dois ao mesmo
+    tempo criava 2 scrollbars (uma dentro da outra); com o painel sem overflow, ele só
+    "vaza" pra fora do viewport e quem rola pra alcançar o que passou da tela é o overlay,
+    scrollando o painel inteiro (imagem + texto juntos) como uma unidade só.
+    `margin-top`/`margin-bottom: auto` no painel + `align-items: flex-start` no overlay é o
+    truque clássico de "centralizar com flexbox e ainda permitir overflow/scroll":
+    centraliza igual a `align-items: center` quando o painel cabe na tela, mas em vez de
+    cortar o topo quando não cabe, ele fica alcançável via scroll do overlay.
+  - **Stacking mais cedo:** o layout de 2 colunas (`grid-template-columns: 1fr 1fr` /
+    flex row, `.shop-foppabites_media` + `.shop-foppabites_content` cada um com
+    `min-width: 25rem`) só empilhava (`flex-direction: column`) no breakpoint **tiny**
+    (≤479px) — abaixo disso e até ~991px (breakpoints **medium**/**small**) os dois
+    `min-width: 25rem` (800px de floor, mais gap/padding) não cabiam na tela, causando
+    overflow horizontal em tablets. Agora `flex-direction: column` (+ gap reduzido pra
+    `2rem`) entra já no breakpoint **medium** (≤991px, cascade automático pro **small**
+    também) — só o **main** (desktop largo) mantém as 2 colunas lado a lado.
+    `.shop-foppabites_media`/`.shop-foppabites_content` também reduzem `min-width` pra
+    `20rem` no **medium** (**tiny** continua com `15rem`, mais agressivo) e a mídia ganha
+    `max-height: 20rem` + `overflow: hidden` nesse breakpoint (**tiny** já tinha
+    `16rem`) — evita a imagem dominar a tela empilhada antes do texto aparecer.
   - Animação (100% GSAP, sem CSS de transição): `src/js/pages/foppa-bites.js`. Timeline de
     entrada/saída anima o overlay (fade), o `.shop-foppabites_panel` (fade + y + scale) e,
     em stagger, `.shop-foppabites_media`, o container `.shop-foppabites_type` (como bloco
@@ -241,9 +264,13 @@ Nesses casos o código vive **local** (`src/`) e é publicado via JSDelivr — n
     **não** é o mesmo objeto do combo `active` usado nas `foppabites-tabs_item`; combo
     classes no Webflow são amarradas à classe-pai com que foram criadas, reaplicar o mesmo
     nome sob um pai diferente exige criar um novo combo, não só listar o nome em
-    `set_style`). **O clique não é interceptado** — cada opção navega normalmente para o
-    `href` configurado nela no Designer (ainda placeholder; defina o destino real por
-    fora). Por isso essas opções são links puros, sem `role`/`aria-*` de botão/toggle.
+    `set_style`). **Em telas touch** (`matchMedia("(hover: hover) and (pointer: fine)")`
+    dando `false`) não existe "passar o mouse" — o primeiro toque numa opção só faz a
+    pré-visualização (via `click` com `preventDefault`, já que não roda `mouseenter`);
+    um segundo toque, com a opção já ativa, segue o link normalmente. Em dispositivos com
+    mouse/trackpad de verdade o clique não é interceptado — cada opção navega normalmente
+    para o `href` configurado nela no Designer (ainda placeholder; defina o destino real
+    por fora). Por isso essas opções são links puros, sem `role`/`aria-*` de botão/toggle.
     > ⚠️ Atributo é `data-shop-type` (não `data-type`) — nome escolhido para não colidir
     > com um possível `data-type` genérico de outro script/plugin no futuro.
  - GSAP + ScrollTrigger agora carregam no **Custom Code do site** (Head), não mais por

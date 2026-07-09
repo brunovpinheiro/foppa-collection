@@ -170,6 +170,11 @@ function initShopNowDialog() {
 // participa da troca — continua como link normal.
 // Passar o mouse (ou focar via teclado) troca a pré-visualização; o clique
 // NÃO é interceptado — segue o href definido em cada link normalmente.
+// Em telas touch (sem hover real, ex.: celular/tablet) não existe "passar o
+// mouse", então o toque assume esse papel: o primeiro toque numa opção só
+// pré-visualiza (como um hover simulado) e não navega; um segundo toque, já
+// com a opção ativa, segue o link normalmente — mesmo padrão usado em menus
+// com preview em sites responsivos.
 // A classe combo "active" marca visualmente a opção em pré-visualização.
 function initTypeSwitcher(dialog, dur) {
 	const panels = Array.from(dialog.querySelectorAll(".foppabites-type_item[data-shop-type]"));
@@ -214,11 +219,23 @@ function initTypeSwitcher(dialog, dur) {
 			.to(nextPanel, { autoAlpha: 1, y: 0, duration: dur(0.3) });
 	};
 
-	// mouseenter cobre o hover do mouse; focus replica o mesmo comportamento
-	// pra navegação por teclado (Tab), já que não há evento de "hover" nativo
-	// pra quem não usa mouse.
+	// "hover: hover" + "pointer: fine" = dispositivo com mouse/trackpad de
+	// verdade. Em telas touch essa media query dá false, então ali o clique
+	// vira o gatilho da pré-visualização (ver comentário da função acima).
+	const supportsHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
 	optionLinks.forEach((link) => {
-		link.addEventListener("mouseenter", () => switchTo(link.dataset.shopType));
+		if (supportsHover) {
+			link.addEventListener("mouseenter", () => switchTo(link.dataset.shopType));
+		} else {
+			link.addEventListener("click", (event) => {
+				if (link.dataset.shopType !== activeType) {
+					event.preventDefault();
+					switchTo(link.dataset.shopType);
+				}
+			});
+		}
+		// focus cobre navegação por teclado em qualquer tipo de dispositivo.
 		link.addEventListener("focus", () => switchTo(link.dataset.shopType));
 	});
 
