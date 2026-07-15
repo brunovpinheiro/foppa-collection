@@ -2,6 +2,7 @@ node_modules/
 .DS_Store
 *.log
 npm-debug.log*
+assets/collection-scroll/
 
 # dist é gerado pelo gulp. Se for servir via JSDelivr por GitHub,
 # COMENTE a linha abaixo para versionar e publicar os arquivos build.

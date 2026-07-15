@@ -273,6 +273,15 @@ Nesses casos o código vive **local** (`src/`) e é publicado via JSDelivr — n
     por fora). Por isso essas opções são links puros, sem `role`/`aria-*` de botão/toggle.
     > ⚠️ Atributo é `data-shop-type` (não `data-type`) — nome escolhido para não colidir
     > com um possível `data-type` genérico de outro script/plugin no futuro.
+  - **Painel deslizante "Escolha o sabor" (`.shop-signature-flavors_panel`):** filho
+    absoluto de `.shop-foppabites_panel` (pai com `position: relative` + `overflow: clip`).
+    Clicar em `signature` (`.foppabites-option_link[data-shop-type="signature"]`) **não
+    navega** — desliza o painel de `right: -50%` → `0%` (desktop; em ≤991px parte de
+    `-100%` com `max-width: 100%`) via GSAP + combo `is-open` (`initSignatureFlavorsPanel`
+    em `foppa-bites.js`). Contém 3 sabores da Signature Edition, cada um com checkout
+    Stripe próprio (`.shop-signature-flavors_options > .foppabites-option_link[data-flavor]`).
+    Fecha via "← Voltar" (`#btnBackSignatureFlavors`), Esc (coordenado pra fechar o slide
+    antes do Shop Now) ou ao fechar o Shop Now.
  - GSAP + ScrollTrigger agora carregam no **Custom Code do site** (Head), não mais por
  página — ver seção 5.1. O Custom Code da página FOPPA BITES só mantém o
  `<script src>` do `foppa-bites.min.js` (JS específico desta página); `style.min.css`,

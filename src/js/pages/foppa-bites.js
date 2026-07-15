@@ -33,6 +33,20 @@ function initShopNowDialog() {
 	const dur = (seconds) => (reduceMotion ? 0.001 : seconds);
 	const stagger = reduceMotion ? 0 : 0.08;
 
+	// Painel "Escolha o sabor" (.shop-signature-flavors_panel): filho absoluto
+	// de .shop-foppabites_panel. Parte em right: -50% (desktop) / -100%
+	// (≤991px) e desliza pra right: 0% ao clicar na opção "signature", em
+	// vez de navegar direto pro Stripe. Volta com "← Voltar", Esc ou ao
+	// fechar o Shop Now.
+	const signatureFlavorsPanel = initSignatureFlavorsPanel(panel, dur);
+	const signatureLink = Array.from(optionLinks).find((link) => link.dataset.shopType === "signature");
+	if (signatureLink) {
+		signatureLink.addEventListener("click", (event) => {
+			event.preventDefault();
+			signatureFlavorsPanel.open();
+		});
+	}
+
 	// Independente do open/close: já deixa a variante correta visível dentro
 	// de typeContainer assim que a página carrega, para não haver flash de
 	// conteúdo errado quando o dialogo abrir pela primeira vez.
@@ -67,6 +81,17 @@ function initShopNowDialog() {
 	let isOpen = false;
 	let timeline = null;
 
+	// focus() sem preventScroll (e o scroll-into-view do iOS) faz o overlay
+	// ou a página saltarem depois da animação — especialmente no mobile.
+	const focusWithoutScroll = (el) => {
+		if (!el) return;
+		const pageY = window.scrollY;
+		const dialogTop = dialog.scrollTop;
+		el.focus({ preventScroll: true });
+		if (window.scrollY !== pageY) window.scrollTo(0, pageY);
+		if (dialog.scrollTop !== dialogTop) dialog.scrollTop = dialogTop;
+	};
+
 	const lockPageScroll = () => {
 		document.documentElement.style.overflow = "hidden";
 		if (window.lenis) window.lenis.stop();
@@ -84,6 +109,7 @@ function initShopNowDialog() {
 		activateShopNowTab();
 		lockPageScroll();
 		dialog.style.display = "flex";
+		dialog.scrollTop = 0;
 		dialog.setAttribute("aria-hidden", "false");
 
 		gsap.set(dialog, { autoAlpha: 0 });
@@ -103,7 +129,7 @@ function initShopNowDialog() {
 		if (optionLinks.length) {
 			timeline.to(optionLinks, { autoAlpha: 1, y: 0, duration: dur(0.45), stagger }, "-=0.3");
 		}
-		timeline.eventCallback("onComplete", () => panel.focus());
+		timeline.eventCallback("onComplete", () => focusWithoutScroll(panel));
 	};
 
 	const closeDialog = () => {
@@ -112,6 +138,7 @@ function initShopNowDialog() {
 
 		if (timeline) timeline.kill();
 		typeSwitcher.killTimeline();
+		signatureFlavorsPanel.close({ immediate: true, skipFocus: true });
 		restorePreviousTab();
 		dialog.setAttribute("aria-hidden", "true");
 
@@ -120,7 +147,7 @@ function initShopNowDialog() {
 			onComplete: () => {
 				dialog.style.display = "none";
 				unlockPageScroll();
-				trigger.focus();
+				focusWithoutScroll(trigger);
 			},
 		});
 		if (optionLinks.length) {
@@ -158,8 +185,115 @@ function initShopNowDialog() {
 	});
 
 	document.addEventListener("keydown", (event) => {
-		if (event.key === "Escape" && isOpen) closeDialog();
+		if (event.key !== "Escape") return;
+		// Fecha primeiro o painel de sabores, se estiver aberto — Esc nunca
+		// deve saltar direto pro Shop Now com o slide ainda coberto.
+		if (signatureFlavorsPanel.isOpen()) {
+			signatureFlavorsPanel.close();
+			return;
+		}
+		if (isOpen) closeDialog();
 	});
+}
+
+// Painel "Escolha o sabor" (.shop-signature-flavors_panel): absoluto dentro
+// de .shop-foppabites_panel (position: relative + overflow: clip). Estado
+// fechado = right: -50% (desktop) / -100% (≤991px); aberto = right: 0%
+// (combo "is-open" + GSAP). Abre ao clicar em Signature Edition; cada
+// .foppabites-option_link[data-flavor] navega direto pro Stripe. Fecha via
+// #btnBackSignatureFlavors, Esc (coordenado com initShopNowDialog) ou ao
+// fechar o Shop Now.
+function initSignatureFlavorsPanel(shopPanel, dur) {
+	const panel = shopPanel.querySelector(":scope > .shop-signature-flavors_panel");
+	if (!panel || typeof gsap === "undefined") {
+		return { open: () => {}, close: () => {}, isOpen: () => false };
+	}
+
+	const backBtn = document.getElementById("btnBackSignatureFlavors");
+	const closedMq = window.matchMedia("(max-width: 991px)");
+	const getClosedRight = () => (closedMq.matches ? "-100%" : "-50%");
+
+	let isOpen = false;
+	let tween = null;
+	let lastFocusedElement = null;
+
+	gsap.set(panel, { right: getClosedRight() });
+	panel.classList.remove("is-open");
+	panel.setAttribute("aria-hidden", "true");
+
+	// O overlay .dialog-shop-foppabites rola no mobile — focus() sem
+	// preventScroll faz o browser puxar o scroll pra cima até o topo do
+	// painel absoluto. Guarda/restaura scrollTop pra cobrir browsers que
+	// ainda movem o scroll mesmo com preventScroll.
+	const scrollRoot = shopPanel.closest("#dialogShopNow");
+	const focusWithoutScroll = (el) => {
+		if (!el) return;
+		const pageY = window.scrollY;
+		const top = scrollRoot ? scrollRoot.scrollTop : 0;
+		el.focus({ preventScroll: true });
+		if (window.scrollY !== pageY) window.scrollTo(0, pageY);
+		if (scrollRoot && scrollRoot.scrollTop !== top) scrollRoot.scrollTop = top;
+	};
+
+	const open = () => {
+		if (isOpen) return;
+		isOpen = true;
+		lastFocusedElement = document.activeElement;
+
+		if (tween) tween.kill();
+		panel.classList.add("is-open");
+		panel.setAttribute("aria-hidden", "false");
+
+		tween = gsap.to(panel, {
+			right: "0%",
+			duration: dur(0.45),
+			ease: "power3.out",
+			onComplete: () => focusWithoutScroll(panel),
+		});
+	};
+
+	const close = ({ immediate = false, skipFocus = false } = {}) => {
+		if (!isOpen && !immediate) return;
+		isOpen = false;
+
+		if (tween) tween.kill();
+		panel.classList.remove("is-open");
+		panel.setAttribute("aria-hidden", "true");
+
+		const finished = () => {
+			if (!skipFocus) focusWithoutScroll(lastFocusedElement);
+		};
+
+		if (immediate) {
+			gsap.set(panel, { right: getClosedRight() });
+			finished();
+			return;
+		}
+
+		tween = gsap.to(panel, {
+			right: getClosedRight(),
+			duration: dur(0.35),
+			ease: "power2.in",
+			onComplete: finished,
+		});
+	};
+
+	if (backBtn) {
+		const triggerClose = (event) => {
+			event.preventDefault();
+			close();
+		};
+		backBtn.addEventListener("click", triggerClose);
+		backBtn.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" || event.key === " ") triggerClose(event);
+		});
+	}
+
+	closedMq.addEventListener("change", () => {
+		if (!isOpen) gsap.set(panel, { right: getClosedRight() });
+	});
+
+	return { open, close, isOpen: () => isOpen };
 }
 
 // Seletor de variante do produto dentro do dialog Shop Now: cada opção em
