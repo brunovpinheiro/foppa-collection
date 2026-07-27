@@ -1,0 +1,31 @@
+// ============================================================
+// Article pictures — masonry grid + scroll reveal
+// Layout (grid, gap, offset das colunas pares) fica no Webflow.
+// Aqui: reveal + caso de 1 imagem só (Designer não tem :only-child/:has).
+// ============================================================
+
+// Uma imagem: sai do grid 2 colunas, centraliza e limita a 880px (55rem).
+.article-pictures_list:has(> .article-pictures_slide:only-child) {
+	grid-template-columns: 1fr;
+	justify-items: center;
+}
+
+.article-pictures_slide {
+	will-change: transform, opacity;
+
+	&:only-child {
+		width: 100%;
+		max-width: 68rem;
+		margin-top: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		will-change: auto;
+	}
+}
+
+.article-pictures_img {
+	width: 100%;
+	height: auto;
+	display: block;
+}

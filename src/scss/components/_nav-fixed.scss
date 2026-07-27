@@ -1,0 +1,19 @@
+// ============================================================
+// Foppa — Navbar fixed + troca Light/Dark por seção
+// (.nav_fixed — position: fixed no Designer)
+//
+// A variante Mode (Light/Dark) do componente Navbar é alternada
+// em JS (src/js/common.js → initNavTheme) conforme a cor da
+// seção sob o nav. Aqui só a transição suave de cor dos tokens
+// consumidos (--_components---navbar--foreground).
+// ============================================================
+
+.nav_fixed {
+	.nav_logo,
+	.nav_menu_link,
+	.hamburger_12_line {
+		transition:
+			color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+			background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+}

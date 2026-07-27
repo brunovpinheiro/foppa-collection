@@ -5,6 +5,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 	initLenis();
+	initNavTheme();
 	initMeetCeoDialog();
 });
 
@@ -39,6 +40,127 @@ function initLenis() {
 		lenis.raf(time * 1000);
 	});
 	gsap.ticker.lagSmoothing(0);
+}
+
+// Navbar (.nav_fixed): permanece fixed e alterna Light/Dark conforme a
+// cor da seção logo abaixo. Cobre o componente "Navbar" e o "Navbar - MKT"
+// (ambos usam .nav_component, mas cada um tem seu w-variant / data-wf mode).
+// A CSS publicada também aceita .nav_component.dark para os tokens.
+function initNavTheme() {
+	const navEntries = [...document.querySelectorAll(".nav_fixed")].flatMap((navFixed) => {
+		const nav = navFixed.querySelector(".nav_component");
+		if (!nav) return [];
+		return [{ navFixed, nav, config: getNavThemeConfig(nav), mode: null }];
+	});
+	if (!navEntries.length) return;
+
+	const LUMINANCE_THRESHOLD = 0.45;
+
+	const setMode = (entry, mode) => {
+		if (mode === entry.mode) return;
+		entry.mode = mode;
+		const isDark = mode === "dark";
+		const { darkVariant, modeAttr } = entry.config;
+
+		entry.nav.classList.toggle("dark", isDark);
+		entry.nav.classList.toggle(darkVariant, isDark);
+		entry.nav.setAttribute(modeAttr, mode);
+
+		// Filhos que também recebem w-variant no publish (logo, botão,
+		// linhas do hamburger) — espelhamos o :where() da CSS gerada.
+		entry.navFixed.querySelectorAll(".nav_logo, .nav_button, .hamburger_12_line").forEach((el) => {
+			el.classList.toggle(darkVariant, isDark);
+		});
+	};
+
+	const parseRgb = (value) => {
+		const match = value?.match(/rgba?\(([^)]+)\)/i);
+		if (!match) return null;
+		const parts = match[1].split(",").map((part) => parseFloat(part.trim()));
+		const [r, g, b, a = 1] = parts;
+		if ([r, g, b].some((n) => Number.isNaN(n)) || a === 0) return null;
+		return { r, g, b };
+	};
+
+	const relativeLuminance = ({ r, g, b }) => {
+		const toLinear = (channel) => {
+			const value = channel / 255;
+			return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+		};
+		const R = toLinear(r);
+		const G = toLinear(g);
+		const B = toLinear(b);
+		return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+	};
+
+	const resolveFromElement = (el) => {
+		let node = el;
+		while (node && node !== document.documentElement) {
+			const explicit = node.getAttribute?.("data-nav-mode");
+			if (explicit === "light" || explicit === "dark") return explicit;
+
+			const bg = parseRgb(getComputedStyle(node).backgroundColor);
+			if (bg) return relativeLuminance(bg) < LUMINANCE_THRESHOLD ? "dark" : "light";
+
+			node = node.parentElement;
+		}
+		return "light";
+	};
+
+	const updateEntry = (entry) => {
+		const rect = entry.navFixed.getBoundingClientRect();
+		const x = Math.min(Math.max(window.innerWidth * 0.5, 0), window.innerWidth - 1);
+		const y = Math.min(Math.max(rect.bottom + 2, 0), window.innerHeight - 1);
+		const hit = document.elementsFromPoint(x, y).find((el) => {
+			return !entry.navFixed.contains(el) && el !== document.documentElement && el !== document.body;
+		});
+		if (!hit) return;
+
+		const target = hit.closest("section, footer, [data-nav-mode]") || hit;
+		setMode(entry, resolveFromElement(target));
+	};
+
+	const update = () => {
+		navEntries.forEach(updateEntry);
+	};
+
+	let ticking = false;
+	const onScroll = () => {
+		if (ticking) return;
+		ticking = true;
+		requestAnimationFrame(() => {
+			update();
+			ticking = false;
+		});
+	};
+
+	if (window.lenis) window.lenis.on("scroll", onScroll);
+	else window.addEventListener("scroll", onScroll, { passive: true });
+	window.addEventListener("resize", onScroll);
+	update();
+}
+
+// Mapeia o .nav_component publicado para a variante Dark + attr Mode do
+// componente Webflow correspondente (Navbar vs Navbar - MKT).
+function getNavThemeConfig(nav) {
+	// Navbar - MKT: attr Mode próprio + logo com combo is-mkt.
+	// Funciona mesmo quando a instância começa em Light (sem w-variant).
+	const isMkt =
+		nav.hasAttribute("data-wf--navbar---mkt--mode") ||
+		Boolean(nav.querySelector(".nav_logo.is-mkt")) ||
+		nav.classList.contains("w-variant-a6c0ab14-a18b-5bad-25df-c551f2807832");
+
+	if (isMkt) {
+		return {
+			darkVariant: "w-variant-a6c0ab14-a18b-5bad-25df-c551f2807832",
+			modeAttr: "data-wf--navbar---mkt--mode",
+		};
+	}
+
+	return {
+		darkVariant: "w-variant-71fd37d1-cb4d-00fa-360e-635deceae661",
+		modeAttr: "data-wf--navbar--mode",
+	};
 }
 
 // Dialog "Meet CEO": componente reutilizável (Webflow Component) presente

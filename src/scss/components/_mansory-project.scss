@@ -1,0 +1,50 @@
+/* --- CONFIGURAÇÃO DO CONTAINER PRINCIPAL --- */
+.mansory-gallery_list {
+	display: grid !important;
+	grid-template-columns: repeat(2, 1fr) !important; /* Força 2 colunas idênticas */
+	grid-auto-flow: row;
+	gap: 10rem; /* Espaçamento padrão entre as fotos (horizontal e vertical) */
+	padding-bottom: 160px; /* Compensa o deslocamento da última imagem da direita */
+	width: 100%;
+}
+
+/* --- CONFIGURAÇÃO DOS ITENS DE IMAGEM --- */
+.mansory-gallery_item {
+	display: block;
+	width: 100%;
+	height: auto;
+	align-self: start; /* Alinha o topo das linhas lógicas */
+}
+
+.mansory-gallery_list .mansory-gallery_item:nth-child(3n + 1) {
+	scale: 0.85;
+}
+.mansory-gallery_list .mansory-gallery_item:nth-child(5n + 2) {
+	scale: 0.85;
+}
+
+/* --- EFEITO DESALINHADO (APENAS PARA DESKTOP E TABLET) --- */
+@media screen and (min-width: 768px) {
+	/* Seleciona todas as imagens da coluna da direita (pares: 2, 4, 6...) e empurra para baixo */
+	.mansory-gallery_list .mansory-gallery_item:nth-child(even) {
+		transform: translateY(200px); /* Altere os pixels se quiser mais ou menos desnível */
+	}
+}
+
+/* --- ADAPTAÇÃO PARA CELULARES (MOBILE) --- */
+@media screen and (max-width: 767px) {
+	.mansory-gallery_list {
+		grid-template-columns: 1fr !important; /* Transforma o layout em 1 coluna única */
+		gap: 24px; /* Diminui o espaçamento em telas menores */
+		padding-bottom: 0px; /* Remove o espaçamento de compensação extra */
+	}
+
+	.mansory-gallery_list .mansory-gallery_item {
+		scale: 1 !important; /* Remove a redução no celular (opcional) */
+	}
+
+	/* Reseta o empurrão para baixo no celular para as fotos não se sobreporem */
+	.mansory-gallery_list .mansory-gallery_item:nth-child(even) {
+		transform: translateY(0px);
+	}
+}
