@@ -9,7 +9,7 @@ const concat = require("gulp-concat");
 // Registre aqui os caminhos das libs quando necessário (ex.: gsap, lenis, swiper).
 // GSAP não entra aqui — é carregado via CDN no Custom Code do Webflow (ver CLAUDE.md, seção 5.1).
 const libsConfig = {
-	js: ["./src/js/lib/lenis.js"],
+	js: ["./src/js/lib/lenis.js", "./src/js/lib/jquery.mask.min.js"],
 	css: ["./src/scss/lib/lenis.scss"],
 };
 

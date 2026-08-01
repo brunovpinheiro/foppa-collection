@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initLenis();
 	initNavTheme();
 	initMeetCeoDialog();
+	initPhoneMasks();
 });
 
 // Smooth scroll (Lenis) sincronizado com o RAF/ticker do GSAP, para que
@@ -231,4 +232,29 @@ function initMeetCeoDialog() {
 	modal.addEventListener("click", (event) => {
 		if (event.target === modal) closeModal();
 	});
+}
+
+// Máscara de telefone BR (padrão São Paulo Celphones do jQuery Mask Plugin):
+// https://igorescobar.github.io/jQuery-Mask-Plugin/docs.html
+// Alterna entre (00) 0000-0000 e (00) 00000-0000 conforme o comprimento.
+// Uso no Webflow: <input data-mask="telefone" …>. A lib aplica data-mask
+// automaticamente no load (tratando o valor como pattern), então
+// desfazemos e reaplicamos com a máscara dinâmica correta.
+function initPhoneMasks() {
+	if (typeof jQuery === "undefined" || typeof jQuery.fn.mask === "undefined") return;
+
+	const $fields = jQuery('[data-mask="telefone"]');
+	if (!$fields.length) return;
+
+	const SPMaskBehavior = function (val) {
+		return val.replace(/\D/g, "").length === 11 ? "(00) 00000-0000" : "(00) 0000-00009";
+	};
+
+	const spOptions = {
+		onKeyPress: function (val, e, field, options) {
+			field.mask(SPMaskBehavior.apply({}, arguments), options);
+		},
+	};
+
+	$fields.unmask().mask(SPMaskBehavior, spOptions);
 }

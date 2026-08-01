@@ -5,7 +5,65 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 	initProjectsHoverImage();
+	initSubscribeDialog();
 });
+
+// Dialog "Subscribe" (#dialogSubscribe): abre via #openSubscribeBtn
+// (CTA .journal_subscribe-btn), fecha via #closeSubscribeBtn, clique
+// no backdrop ou Esc. Mesmo padrão do Meet CEO em common.js —
+// trava scroll da página + Lenis enquanto aberto.
+function initSubscribeDialog() {
+	const modal = document.getElementById("dialogSubscribe");
+	if (!modal) return;
+
+	const openBtn = document.getElementById("openSubscribeBtn");
+	const closeBtn = document.getElementById("closeSubscribeBtn");
+
+	// data-lenis-prevent: com o Lenis pausado (lenis.stop()), a lib
+	// passa a dar preventDefault em QUALQUER wheel/touch fora desse
+	// atributo — inclusive dentro do próprio dialog. Marcando o
+	// <dialog>, o overflow-y:auto nativo volta a funcionar.
+	modal.setAttribute("data-lenis-prevent", "");
+
+	const lockPageScroll = () => {
+		document.documentElement.style.overflow = "hidden";
+		if (window.lenis) window.lenis.stop();
+	};
+	const unlockPageScroll = () => {
+		document.documentElement.style.overflow = "";
+		if (window.lenis) window.lenis.start();
+	};
+
+	const openModal = (event) => {
+		if (event) event.preventDefault();
+		lockPageScroll();
+		modal.showModal();
+	};
+	const closeModal = () => modal.close();
+
+	modal.addEventListener("close", unlockPageScroll);
+
+	// openBtn é um <a>, closeBtn é <div role="button"> — tratamos
+	// Enter/Espaço no close (e no open, por garantia) para teclado.
+	const bindActivation = (el, handler) => {
+		if (!el) return;
+		el.addEventListener("click", handler);
+		el.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" || event.key === " ") {
+				event.preventDefault();
+				handler(event);
+			}
+		});
+	};
+
+	bindActivation(openBtn, openModal);
+	bindActivation(closeBtn, closeModal);
+
+	// Clique direto no <dialog> (fora da caixa) = backdrop.
+	modal.addEventListener("click", (event) => {
+		if (event.target === modal) closeModal();
+	});
+}
 
 // Grid de projetos (.projects-grid > .project-item): cada item tem uma
 // .project-item_img absoluta, centrada e com opacity:0 por padrão (definido

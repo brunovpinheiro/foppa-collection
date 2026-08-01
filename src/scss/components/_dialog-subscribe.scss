@@ -1,0 +1,62 @@
+// ============================================================
+// Foppa — Dialog "Subscribe" (Client-First: .dialog_subscribe)
+// Fade-up/down no <dialog> + fade in/out no ::backdrop nativo.
+//
+// Mesmo padrão do .dialog_meetceo — o Webflow Designer não expõe
+// ::backdrop nem @starting-style, por isso a animação mora aqui.
+// ============================================================
+
+$subscribe-duration: 0.32s;
+$subscribe-ease: cubic-bezier(0.16, 1, 0.3, 1);
+$subscribe-offset: 1.5rem;
+
+dialog.dialog_subscribe {
+	opacity: 0;
+	transform: translateY($subscribe-offset);
+	transition:
+		opacity $subscribe-duration $subscribe-ease,
+		transform $subscribe-duration $subscribe-ease,
+		overlay $subscribe-duration $subscribe-ease allow-discrete,
+		display $subscribe-duration $subscribe-ease allow-discrete;
+}
+
+dialog.dialog_subscribe[open] {
+	opacity: 1;
+	transform: translateY(0);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+@starting-style {
+	dialog.dialog_subscribe[open] {
+		opacity: 0;
+		transform: translateY($subscribe-offset);
+	}
+}
+
+dialog.dialog_subscribe::backdrop {
+	background-color: hsl(0 0% 0% / 0%);
+	transition:
+		background-color $subscribe-duration $subscribe-ease,
+		overlay $subscribe-duration $subscribe-ease allow-discrete,
+		display $subscribe-duration $subscribe-ease allow-discrete;
+}
+
+dialog.dialog_subscribe[open]::backdrop {
+	background-color: hsl(0 0% 0% / 70%);
+}
+
+@starting-style {
+	dialog.dialog_subscribe[open]::backdrop {
+		background-color: hsl(0 0% 0% / 0%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	dialog.dialog_subscribe,
+	dialog.dialog_subscribe::backdrop {
+		transition-duration: 1ms;
+	}
+}

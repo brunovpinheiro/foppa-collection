@@ -1,0 +1,42 @@
+// ============================================================
+// Foppa — Form floating label (Client-First: .form_*)
+// Interação do label flutuante — layout/cores ficam no Webflow.
+//
+// Estrutura esperada:
+//   .form_field-wrapper
+//     .form_label
+//     .form_input
+//
+// Para o label permanecer flutuando com valor preenchido (sem
+// focus), cada .form_input precisa de um placeholder (mesmo
+// espaço: placeholder=" ") — o seletor :placeholder-shown
+// depende disso.
+// ============================================================
+
+$form-label-duration: 0.2s;
+$form-label-ease: ease;
+$form-label-size-float: 0.65rem; // 10px
+
+.form_field-wrapper {
+	.form_label {
+		transition:
+			top $form-label-duration $form-label-ease,
+			transform $form-label-duration $form-label-ease,
+			font-size $form-label-duration $form-label-ease;
+	}
+
+	&:focus-within .form_label,
+	&:has(.form_input:not(:placeholder-shown)) .form_label {
+		top: 0;
+		transform: translate(0, -6px);
+		font-size: $form-label-size-float;
+		opacity: 0.7;
+		letter-spacing: 0.05em;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.form_field-wrapper .form_label {
+		transition-duration: 1ms;
+	}
+}
