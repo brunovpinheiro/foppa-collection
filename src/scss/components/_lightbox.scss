@@ -1,0 +1,84 @@
+// ============================================================
+// Foppa — Webflow Lightbox (classes nativas .w-lightbox-*)
+// Estilos do lightbox gerado pelo Webflow — o Designer não
+// expõe esses elementos no painel, por isso o controle fica aqui.
+//
+// HTML de referência (gerado pelo Webflow em runtime):
+// .w-lightbox-backdrop
+//   .w-lightbox-container
+//     .w-lightbox-content.w-lightbox-group
+//       .w-lightbox-view#w-lightbox-view
+//         .w-lightbox-frame
+//           figure.w-lightbox-figure
+//             img.w-lightbox-img.w-lightbox-image
+//       .w-lightbox-spinner.w-lightbox-hide
+//       .w-lightbox-control.w-lightbox-left
+//       .w-lightbox-control.w-lightbox-right
+//       .w-lightbox-control.w-lightbox-close
+//     .w-lightbox-strip[role="tablist"]
+//       .w-lightbox-item[.w-lightbox-active]
+//         .w-lightbox-thumbnail
+//           img.w-lightbox-img.w-lightbox-wide.w-lightbox-thumbnail-image
+// ============================================================
+
+.w-lightbox-backdrop {
+	.w-lightbox-container {
+		.w-lightbox-content {
+			&.w-lightbox-group {
+			}
+
+			.w-lightbox-view {
+				// #w-lightbox-view
+				.w-lightbox-frame {
+					.w-lightbox-figure {
+						.w-lightbox-img {
+							&.w-lightbox-image {
+								max-width: 50vw;
+								max-height: 70vh;
+							}
+						}
+					}
+				}
+			}
+
+			.w-lightbox-spinner {
+				&.w-lightbox-hide {
+				}
+			}
+
+			.w-lightbox-control {
+				&.w-lightbox-left {
+				}
+
+				&.w-lightbox-right {
+					&.w-lightbox-inactive {
+					}
+
+					&.active-lightbox {
+					}
+				}
+
+				&.w-lightbox-close {
+				}
+			}
+		}
+
+		.w-lightbox-strip {
+			display: none;
+			.w-lightbox-item {
+				&.w-lightbox-active {
+				}
+
+				.w-lightbox-thumbnail {
+					.w-lightbox-img {
+						&.w-lightbox-wide {
+						}
+
+						&.w-lightbox-thumbnail-image {
+						}
+					}
+				}
+			}
+		}
+	}
+}
