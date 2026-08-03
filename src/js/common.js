@@ -6,6 +6,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 	initLenis();
 	initNavTheme();
+	initNavDropdowns();
 	initMeetCeoDialog();
 	initPhoneMasks();
 });
@@ -162,6 +163,90 @@ function getNavThemeConfig(nav) {
 		darkVariant: "w-variant-71fd37d1-cb4d-00fa-360e-635deceae661",
 		modeAttr: "data-wf--navbar--mode",
 	};
+}
+
+// Dropdowns da navbar (ex.: FOPPA COLLECTION → Artigos): construídos com
+// divs simples no Designer (nav_dropdown > [toggle, nav_dropdown_menu]), não
+// o widget nativo "Dropdown" do Webflow — para ter controle total do
+// comportamento em vez do JS interno do Webflow. O toggle é uma div
+// role="button" (não um link, já que só alterna o menu, não navega), e
+// list = toggle.nextElementSibling dentro do wrapper, então nenhuma classe
+// extra é necessária só para o JS encontrar os elementos.
+// Classe da lista é "nav_dropdown_menu" (não "nav_dropdown_list") de
+// propósito: "nav_dropdown_list" é usada pelo widget nativo "Dropdown" do
+// Webflow (ex.: FOPPAMKT, que ainda usa o widget nativo com data-hover) e
+// depende do próprio JS interno do Webflow (.w--open/display) — misturar
+// esse controle de opacity/pointer-events daria conflito. Nomes/classes
+// separados mantêm os dois mecanismos isolados mesmo compartilhando o
+// wrapper ".nav_dropdown" e o visual (nav_dropdown_link, nav_dropdown_icon).
+// Abre/fecha:
+// - Mouse/trackpad (matchMedia "hover: hover" — mesmo teste usado no
+//   seletor de variante do Shop Now em foppa-bites.js): hover no wrapper
+//   inteiro, com um pequeno delay ao sair do wrapper para tolerar o cursor
+//   cruzando o pequeno gap entre o toggle e a lista.
+// - Toque e teclado (qualquer dispositivo): clique/Enter/Espaço no toggle
+//   sempre alternam — é o único jeito de abrir em telas sem hover.
+// Sem scroll lock: diferente do Meet CEO/Shop Now, isso não é um modal, só
+// um menu suspenso pequeno; fechar é feito via classe combo "is-open" no
+// Designer (opacity/pointer-events), que já anima com transition CSS.
+// No mobile (breakpoint tiny, ≤479px, onde a navbar vira o menu fullscreen)
+// a lista deixa de ser position:absolute e passa a fluir dentro do próprio
+// wrapper (ver overrides tiny em nav_dropdown/nav_dropdown_menu no
+// Designer), então abrir o dropdown empurra o restante do menu para baixo
+// em vez de flutuar uma caixa absoluta por cima do overlay fullscreen.
+function initNavDropdowns() {
+	const dropdowns = document.querySelectorAll(".nav_dropdown");
+	if (!dropdowns.length) return;
+
+	const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
+	const CLOSE_DELAY = 150;
+
+	dropdowns.forEach((dropdown) => {
+		const list = dropdown.querySelector(".nav_dropdown_menu");
+		const toggle = list?.previousElementSibling;
+		if (!list || !toggle) return;
+
+		let closeTimeout;
+		const isOpen = () => list.classList.contains("is-open");
+
+		const open = () => {
+			clearTimeout(closeTimeout);
+			list.classList.add("is-open");
+			toggle.setAttribute("aria-expanded", "true");
+		};
+		const close = () => {
+			list.classList.remove("is-open");
+			toggle.setAttribute("aria-expanded", "false");
+		};
+		const scheduleClose = () => {
+			clearTimeout(closeTimeout);
+			closeTimeout = setTimeout(close, CLOSE_DELAY);
+		};
+
+		dropdown.addEventListener("mouseenter", () => {
+			if (hoverCapable.matches) open();
+		});
+		dropdown.addEventListener("mouseleave", () => {
+			if (hoverCapable.matches) scheduleClose();
+		});
+
+		const toggleOpen = (event) => {
+			event.preventDefault();
+			isOpen() ? close() : open();
+		};
+		toggle.addEventListener("click", toggleOpen);
+		toggle.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" || event.key === " ") toggleOpen(event);
+			if (event.key === "Escape") {
+				close();
+				toggle.focus();
+			}
+		});
+
+		document.addEventListener("click", (event) => {
+			if (isOpen() && !dropdown.contains(event.target)) close();
+		});
+	});
 }
 
 // Dialog "Meet CEO": componente reutilizável (Webflow Component) presente

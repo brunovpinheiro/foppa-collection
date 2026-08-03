@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp *)",
+      "mcp__claude_ai_Figma__get_screenshot",
+      "mcp__claude_ai_Figma__get_metadata",
+      "mcp__webflow__webflow_guide_tool",
+      "Bash(rtk curl *)",
+      "mcp__claude_ai_Figma__get_design_context",
+      "mcp__webflow__data_variable_tool",
+      "mcp__webflow__data_fonts_tool",
+      "mcp__webflow__data_element_tool",
+      "Bash(rtk ls *)",
+      "Bash(rtk find *)",
+      "mcp__webflow__asset_tool",
+      "mcp__claude_ai_Figma__download_assets",
+      "mcp__webflow__data_sites_tool",
+      "mcp__webflow__data_pages_tool",
+      "mcp__webflow__data_style_tool",
+      "mcp__webflow__data_whtml_builder",
+      "mcp__webflow__element_snapshot_tool"
+    ]
+  }
+}
