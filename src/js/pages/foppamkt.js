@@ -6,7 +6,24 @@
 document.addEventListener("DOMContentLoaded", () => {
 	initProjectsHoverImage();
 	initSubscribeDialog();
+	initMailchimpTags();
 });
+
+// Preenche o campo oculto "tags" dos formulários de assinatura do Journal
+// com o ID da tag correspondente no Mailchimp. A integração é feita via
+// Custom Action nativo do Webflow (ver CLAUDE.md) — o Designer não tem UI
+// para definir um valor padrão em campo de texto, então isso é feito aqui.
+function initMailchimpTags() {
+	const TAGS_BY_FORM_ID = {
+		"wf-form-Subscribe-Journal-Printed-Edition": "1375022", // tag "Journal Printed"
+		"wf-form-Subscribe-Journal-Online": "1375003", // tag "Journal"
+	};
+
+	Object.entries(TAGS_BY_FORM_ID).forEach(([formId, tagId]) => {
+		const tagsInput = document.getElementById(formId)?.querySelector('[name="tags"]');
+		if (tagsInput) tagsInput.value = tagId;
+	});
+}
 
 // Dialog "Subscribe" (#dialogSubscribe): abre via #openSubscribeBtn
 // (CTA .journal_subscribe-btn), fecha via #closeSubscribeBtn, clique
