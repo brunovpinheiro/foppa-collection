@@ -165,27 +165,32 @@ function getNavThemeConfig(nav) {
 	};
 }
 
-// Dropdowns da navbar (ex.: FOPPA COLLECTION → Artigos): construídos com
-// divs simples no Designer (nav_dropdown > [toggle, nav_dropdown_menu]), não
-// o widget nativo "Dropdown" do Webflow — para ter controle total do
-// comportamento em vez do JS interno do Webflow. O toggle é uma div
-// role="button" (não um link, já que só alterna o menu, não navega), e
-// list = toggle.nextElementSibling dentro do wrapper, então nenhuma classe
-// extra é necessária só para o JS encontrar os elementos.
+// Dropdowns da navbar (ex.: FOPPA COLLECTION → Artigos, FOPPAMKT → Projetos/
+// Foppa Journal): construídos com divs simples no Designer
+// (nav_dropdown > [toggle, nav_dropdown_menu]), não o widget nativo
+// "Dropdown" do Webflow — para ter controle total do comportamento em vez
+// do JS interno do Webflow. list = toggle.nextElementSibling dentro do
+// wrapper, então nenhuma classe extra é necessária só para o JS encontrar
+// os elementos.
 // Classe da lista é "nav_dropdown_menu" (não "nav_dropdown_list") de
 // propósito: "nav_dropdown_list" é usada pelo widget nativo "Dropdown" do
-// Webflow (ex.: FOPPAMKT, que ainda usa o widget nativo com data-hover) e
-// depende do próprio JS interno do Webflow (.w--open/display) — misturar
-// esse controle de opacity/pointer-events daria conflito. Nomes/classes
-// separados mantêm os dois mecanismos isolados mesmo compartilhando o
-// wrapper ".nav_dropdown" e o visual (nav_dropdown_link, nav_dropdown_icon).
+// Webflow e depende do próprio JS interno do Webflow (.w--open/display) —
+// misturar esse controle de opacity/pointer-events daria conflito.
+// Dois tipos de toggle:
+// - Não-navegável (ex.: FOPPA COLLECTION, sem página própria): uma div
+//   role="button" — clique/Enter/Espaço sempre abrem/fecham o menu.
+// - Navegável (ex.: FOPPAMKT → página /foppamkt): um link de verdade
+//   (`<a href>`) — clique/Enter navegam normalmente (comportamento nativo
+//   do link, sem preventDefault), e o hover ainda abre a prévia do
+//   dropdown para quem usa mouse/trackpad chegar direto numa seção.
 // Abre/fecha:
 // - Mouse/trackpad (matchMedia "hover: hover" — mesmo teste usado no
 //   seletor de variante do Shop Now em foppa-bites.js): hover no wrapper
 //   inteiro, com um pequeno delay ao sair do wrapper para tolerar o cursor
 //   cruzando o pequeno gap entre o toggle e a lista.
-// - Toque e teclado (qualquer dispositivo): clique/Enter/Espaço no toggle
-//   sempre alternam — é o único jeito de abrir em telas sem hover.
+// - Toque (sem hover): no toggle não-navegável, o próprio toque abre/fecha
+//   (só forma de acessar sem mouse). No toggle navegável, o toque navega
+//   direto para a página — as seções do dropdown já estão nela.
 // Sem scroll lock: diferente do Meet CEO/Shop Now, isso não é um modal, só
 // um menu suspenso pequeno; fechar é feito via classe combo "is-open" no
 // Designer (opacity/pointer-events), que já anima com transition CSS.
@@ -205,6 +210,8 @@ function initNavDropdowns() {
 		const list = dropdown.querySelector(".nav_dropdown_menu");
 		const toggle = list?.previousElementSibling;
 		if (!list || !toggle) return;
+
+		const isNavigable = toggle.tagName === "A" && toggle.hasAttribute("href");
 
 		let closeTimeout;
 		const isOpen = () => list.classList.contains("is-open");
@@ -230,18 +237,30 @@ function initNavDropdowns() {
 			if (hoverCapable.matches) scheduleClose();
 		});
 
-		const toggleOpen = (event) => {
-			event.preventDefault();
-			isOpen() ? close() : open();
-		};
-		toggle.addEventListener("click", toggleOpen);
-		toggle.addEventListener("keydown", (event) => {
-			if (event.key === "Enter" || event.key === " ") toggleOpen(event);
-			if (event.key === "Escape") {
-				close();
-				toggle.focus();
-			}
-		});
+		if (isNavigable) {
+			// Clique/Enter seguem o comportamento nativo do link (navega).
+			// Só Escape precisa de tratamento, para fechar a prévia aberta
+			// no hover sem sair da página.
+			toggle.addEventListener("keydown", (event) => {
+				if (event.key === "Escape") {
+					close();
+					toggle.focus();
+				}
+			});
+		} else {
+			const toggleOpen = (event) => {
+				event.preventDefault();
+				isOpen() ? close() : open();
+			};
+			toggle.addEventListener("click", toggleOpen);
+			toggle.addEventListener("keydown", (event) => {
+				if (event.key === "Enter" || event.key === " ") toggleOpen(event);
+				if (event.key === "Escape") {
+					close();
+					toggle.focus();
+				}
+			});
+		}
 
 		document.addEventListener("click", (event) => {
 			if (isOpen() && !dropdown.contains(event.target)) close();
