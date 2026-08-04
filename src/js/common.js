@@ -45,9 +45,15 @@ function initLenis() {
 }
 
 // Navbar (.nav_fixed): permanece fixed e alterna Light/Dark conforme a
-// cor da seção logo abaixo. Cobre o componente "Navbar" e o "Navbar - MKT"
-// (ambos usam .nav_component, mas cada um tem seu w-variant / data-wf mode).
-// A CSS publicada também aceita .nav_component.dark para os tokens.
+// seção logo abaixo — por data-theme="light|dark" na seção quando existe,
+// senão pela luminância do fundo calculado. Cobre o componente "Navbar" e o
+// "Navbar - MKT" (ambos usam .nav_component, mas cada um tem seu w-variant /
+// data-wf mode). A CSS publicada também aceita .nav_component.dark.
+// A troca é só a classe do w-variant no .nav_component: ela aplica o modo da
+// coleção de variáveis "Components" (Light/Dark), que é herdado por todos os
+// descendentes. Por isso tudo que aponta para os tokens Navbar/* acompanha
+// sozinho — inclusive o dropdown, que fica dentro do componente Navmenu
+// aninhado (texto via Navbar/foreground, painel via Navbar/dropdown-background).
 function initNavTheme() {
 	const navEntries = [...document.querySelectorAll(".nav_fixed")].flatMap((navFixed) => {
 		const nav = navFixed.querySelector(".nav_component");
@@ -95,11 +101,21 @@ function initNavTheme() {
 		return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 	};
 
+	// Override explícito na seção, ex.: <section data-theme="light">. Tem
+	// prioridade sobre a luminância porque o fundo calculado nem sempre
+	// reflete o que se vê (seção transparente sobre um wrapper escuro,
+	// imagem/gradiente de fundo, overlay). data-nav-mode é aceito como
+	// alias legado — o atributo usado no Designer é data-theme.
+	const explicitMode = (node) => {
+		const value = node.getAttribute?.("data-theme") ?? node.getAttribute?.("data-nav-mode");
+		return value === "light" || value === "dark" ? value : null;
+	};
+
 	const resolveFromElement = (el) => {
 		let node = el;
 		while (node && node !== document.documentElement) {
-			const explicit = node.getAttribute?.("data-nav-mode");
-			if (explicit === "light" || explicit === "dark") return explicit;
+			const explicit = explicitMode(node);
+			if (explicit) return explicit;
 
 			const bg = parseRgb(getComputedStyle(node).backgroundColor);
 			if (bg) return relativeLuminance(bg) < LUMINANCE_THRESHOLD ? "dark" : "light";
@@ -118,7 +134,7 @@ function initNavTheme() {
 		});
 		if (!hit) return;
 
-		const target = hit.closest("section, footer, [data-nav-mode]") || hit;
+		const target = hit.closest("section, footer, [data-theme], [data-nav-mode]") || hit;
 		setMode(entry, resolveFromElement(target));
 	};
 
