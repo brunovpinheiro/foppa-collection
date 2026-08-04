@@ -152,6 +152,15 @@ function initShopNowDialog() {
 		isOpen ? closeDialog() : openDialog();
 	});
 
+	// Deep link (ex.: item "Shop" do footer, em outra página): a URL chega
+	// como /foppa-bites#dialogShopNow — mesmo id do dialog, sem precisar de
+	// query param separado. Abre direto e limpa o hash da URL (replaceState)
+	// pra não conflitar com o toggle do trigger nem reabrir num refresh.
+	if (window.location.hash === "#" + dialog.id) {
+		openDialog();
+		history.replaceState(null, "", window.location.pathname + window.location.search);
+	}
+
 	// Clicar em outra aba ("Sobre"/"Ingredientes") com o dialogo aberto fecha
 	// o Shop Now antes de seguir a navegação normal da aba (scroll de seção).
 	tabItems
