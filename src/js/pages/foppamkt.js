@@ -18,6 +18,7 @@ function initMailchimpTags() {
 		"wf-form-Subscribe-Journal-Printed-Edition": "1375022", // tag "Journal Printed"
 		"wf-form-Subscribe-Journal-Online": "1375003", // tag "Journal"
 	};
+	
 
 	Object.entries(TAGS_BY_FORM_ID).forEach(([formId, tagId]) => {
 		const tagsInput = document.getElementById(formId)?.querySelector('[name="tags"]');
