@@ -230,7 +230,7 @@ function initShopNowDialog() {
 function initTypeSwitcher(dialog, dur) {
 	const panels = Array.from(dialog.querySelectorAll(".foppabites-type_item[data-shop-type]"));
 	const images = Array.from(dialog.querySelectorAll(".shop-foppabites_img[data-shop-type]"));
-	const optionLinks = Array.from(dialog.querySelectorAll(".foppabites-option_link[data-shop-type]"));
+	const optionLinks = Array.from(dialog.querySelectorAll(".foppabites-option_btn[data-shop-type]"));
 	if (!panels.length || !optionLinks.length) return { killTimeline: () => {} };
 
 	const getPanel = (type) => panels.find((item) => item.dataset.shopType === type);
