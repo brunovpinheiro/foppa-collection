@@ -224,6 +224,9 @@ function initShopNowDialog() {
 // com preview em sites responsivos.
 // A classe combo "active" marca visualmente a opção e a foto em
 // pré-visualização; o texto da variante entra/sai via GSAP (display + fade).
+// O estado inicial (primeiro item ativo) é aplicado pelo próprio JS — ver
+// comentário dentro da função —, então nenhum item precisa nascer com
+// "active" marcado no Designer.
 function initTypeSwitcher(dialog, dur) {
 	const panels = Array.from(dialog.querySelectorAll(".foppabites-type_item[data-shop-type]"));
 	const images = Array.from(dialog.querySelectorAll(".shop-foppabites_img[data-shop-type]"));
@@ -232,8 +235,13 @@ function initTypeSwitcher(dialog, dur) {
 
 	const getPanel = (type) => panels.find((item) => item.dataset.shopType === type);
 
-	const initialLink = optionLinks.find((link) => link.classList.contains("active")) || optionLinks[0];
-	let activeType = initialLink.dataset.shopType;
+	// A variante inicial é sempre a do PRIMEIRO item (ordem do DOM = ordem do
+	// CMS). O estado não pode vir da classe "active" marcada no Designer: com
+	// os produtos saindo do CMS, todos os itens nascem do mesmo template — ou
+	// nenhum tem "active", ou todos têm. Quem manda é este JS, que logo na
+	// inicialização aplica a classe no primeiro item e limpa dos demais
+	// (setActiveLink/setActiveImage percorrem a lista inteira).
+	let activeType = optionLinks[0].dataset.shopType;
 	let switchTimeline = null;
 
 	panels.forEach((item) => {
@@ -253,6 +261,7 @@ function initTypeSwitcher(dialog, dur) {
 		});
 	};
 
+	setActiveLink(activeType);
 	setActiveImage(activeType);
 
 	const switchTo = (nextType) => {
