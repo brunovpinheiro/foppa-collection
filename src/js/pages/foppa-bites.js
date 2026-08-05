@@ -66,6 +66,9 @@ function initShopNowDialog() {
 
 	let isOpen = false;
 	let timeline = null;
+	// Quem abriu o dialogo desta vez (#btnShopNow ou um dos pacotes) — o foco
+	// volta pra ele ao fechar, não sempre pro botão da aba.
+	let opener = trigger;
 
 	// focus() sem preventScroll (e o scroll-into-view do iOS) faz o overlay
 	// ou a página saltarem depois da animação — especialmente no mobile.
@@ -87,9 +90,10 @@ function initShopNowDialog() {
 		if (window.lenis) window.lenis.start();
 	};
 
-	const openDialog = () => {
+	const openDialog = (source) => {
 		if (isOpen) return;
 		isOpen = true;
+		opener = source || trigger;
 
 		if (timeline) timeline.kill();
 		activateShopNowTab();
@@ -132,7 +136,7 @@ function initShopNowDialog() {
 			onComplete: () => {
 				dialog.style.display = "none";
 				unlockPageScroll();
-				focusWithoutScroll(trigger);
+				focusWithoutScroll(opener);
 			},
 		});
 		if (optionLinks.length) {
@@ -150,6 +154,26 @@ function initShopNowDialog() {
 	trigger.addEventListener("click", (event) => {
 		event.preventDefault();
 		isOpen ? closeDialog() : openDialog();
+	});
+
+	// Os pacotes da seção .s-foopabites-packages (.foopabites-packages_item)
+	// também abrem o Shop Now. Diferente do #btnShopNow, eles NÃO são toggle:
+	// clicar num pacote sempre abre (fechar continua sendo pelo botão da aba,
+	// overlay ou Esc). São <div> comuns, sem semântica interativa nativa — é o
+	// JS que os torna clicáveis, então é ele também quem dá papel/foco de
+	// botão; se o script não carregar, seguem imagens estáticas em vez de
+	// controles quebrados.
+	document.querySelectorAll(".foopabites-packages_item").forEach((item) => {
+		item.setAttribute("role", "button");
+		item.setAttribute("tabindex", "0");
+		item.setAttribute("aria-haspopup", "dialog");
+
+		item.addEventListener("click", () => openDialog(item));
+		item.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			event.preventDefault();
+			openDialog(item);
+		});
 	});
 
 	// Deep link (ex.: item "Shop" do footer, em outra página): a URL chega
@@ -290,19 +314,30 @@ function initTypeSwitcher(dialog, dur) {
 }
 
 // Accordion do FAQ (.faq-list > .faq-item): cada item tem .faq-item_heading
-// (gatilho, role="button" + aria-expanded setados no Designer) e
-// .faq-item_body (painel, já nasce com height:0 + overflow:clip no Designer —
-// a base fechada é 100% Client-First, o JS só anima a abertura/fechamento).
+// (gatilho, role="button" + tabindex setados no Designer) e .faq-item_body
+// (painel, já nasce com height:0 + overflow:clip no Designer — a base fechada
+// é 100% Client-First, o JS só anima a abertura/fechamento).
 // Comportamento: clicar num item fechado abre ele e fecha o que estava aberto
 // (só um por vez); clicar no item já aberto apenas fecha. Animação em GSAP:
 // altura do painel (0 → "auto", que o GSAP calcula sozinho) + fade/slide sutil
 // do texto interno, para o conteúdo "surgir" em vez de só esticar o container.
-// O item que já nasce aberto é definido no Designer (aria-expanded="true" no
-// heading, hoje o primeiro item) — o JS só lê esse estado inicial e aplica
-// sem animação (gsap.set, não .to), pra não haver flash fechado→aberto.
+//
+// ⚠️ .faq-item é um Webflow Component ("Collapse", em Global) — todos os itens
+// da página são instâncias da MESMA definição, então os atributos do heading
+// são obrigatoriamente iguais em todas elas. Por isso o estado inicial NÃO
+// pode mais vir de aria-expanded no Designer (marcar "true" ali abriria todos
+// os itens de uma vez, e aria-controls/id fixos gerariam ids duplicados no
+// HTML). Quem manda no estado é este JS: ele fecha todos, abre só o
+// DEFAULT_OPEN_INDEX e escreve aria-expanded + aria-controls/id únicos por
+// instância. Na definição do componente o heading fica com
+// aria-expanded="false" (base fechada também sem JS).
 function initFaqAccordion() {
 	const items = Array.from(document.querySelectorAll(".faq-list .faq-item"));
 	if (!items.length || typeof gsap === "undefined") return;
+
+	// Índice do item que começa aberto (0 = primeiro). Use -1 para começar
+	// com o FAQ inteiro fechado.
+	const DEFAULT_OPEN_INDEX = 0;
 
 	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 	const dur = (seconds) => (reduceMotion ? 0.001 : seconds);
@@ -320,8 +355,17 @@ function initFaqAccordion() {
 
 	let openEntry = null;
 
-	entries.forEach((entry) => {
-		const defaultOpen = entry.heading.getAttribute("aria-expanded") === "true";
+	entries.forEach((entry, index) => {
+		// Como o id do body vem da definição do componente, ele se repetiria em
+		// todas as instâncias — numera aqui pra manter o par heading/body
+		// apontando um pro outro sem id duplicado na página.
+		entry.body.id = "faq-body-" + (index + 1);
+		entry.heading.setAttribute("aria-controls", entry.body.id);
+
+		const defaultOpen = index === DEFAULT_OPEN_INDEX;
+		entry.heading.setAttribute("aria-expanded", defaultOpen ? "true" : "false");
+		// gsap.set (e não .to) porque é estado inicial: sem animação, sem flash
+		// fechado→aberto.
 		gsap.set(entry.body, { height: defaultOpen ? "auto" : 0 });
 		if (entry.content) gsap.set(entry.content, { autoAlpha: defaultOpen ? 1 : 0, y: defaultOpen ? 0 : -8 });
 		if (defaultOpen) openEntry = entry;
@@ -351,7 +395,10 @@ function initFaqAccordion() {
 
 	entries.forEach((entry) => {
 		const toggle = () => {
-			const isOpen = entry.heading.getAttribute("aria-expanded") === "true";
+			// Estado vem da referência em memória, não do aria-expanded do DOM:
+			// o atributo é compartilhado pela definição do componente e só é
+			// confiável depois que este JS o reescreve por instância.
+			const isOpen = openEntry === entry;
 
 			if (isOpen) {
 				closeEntry(entry);
