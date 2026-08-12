@@ -282,6 +282,29 @@ Nesses casos o código vive **local** (`src/`) e é publicado via JSDelivr — n
     Stripe próprio (`.shop-signature-flavors_options > .foppabites-option_link[data-flavor]`).
     Fecha via "← Voltar" (`#btnBackSignatureFlavors`), Esc (coordenado pra fechar o slide
     antes do Shop Now) ou ao fechar o Shop Now.
+- **`.dialog-table`** (página **FOPPA BITES**, elemento `<div id="dialogTable">`, Webflow
+  Component "Dialog - Tabela Nutricional"): substitui os lightboxes nativos que os botões
+  `#btn-table-cacao` / `#btn-table-damasco` / `#btn-table-nozes` usavam — o lightbox só
+  mostrava a imagem e não aceitava rich text abaixo dela. Os antigos `LightboxWrapper`
+  viraram **Link Blocks** com as mesmas classes (`button is-secondary is-small
+  is-rounded-full`) e os mesmos ids.
+  - Estrutura: overlay `.dialog-table` → `.dialog-table_panel` (fecha por
+    `#btnCloseDialogTable`) → 3 × `.dialog-table_item[data-table-flavor]`
+    (`cacao` / `damasco` / `nozes`), cada um com `Image.dialog-table_media`
+    (assets `tabela-cacao/damasco/nozes.avif`) + **Rich Text** logo abaixo.
+    Só o painel do sabor clicado fica visível.
+  - O pareamento botão↔painel é pelo **`data-table-flavor`**, não pelo id — os ids
+    continuam existindo só como âncora histórica. Cada botão é toggle (clicar no mesmo
+    fecha); clicar em outro botão com o dialogo aberto faz **crossfade** para o outro
+    sabor sem reabrir o overlay.
+  - Interação/animação: `initNutritionTableDialog` em `src/js/pages/foppa-bites.js`
+    (GSAP, respeita `prefers-reduced-motion`). Fecha pelo botão ✕, clique no overlay ou
+    Esc; trava o scroll da página (`overflow: hidden` + `window.lenis.stop()`) e marca
+    `data-lenis-prevent` — mesmo padrão do Shop Now.
+  - CSS local: `src/scss/components/_dialog-table.scss` (só `will-change` e `cursor`;
+    layout e show/hide são 100% Designer/Client-First, com spacing/cor via tokens).
+  - Os rich texts nascem com **texto placeholder** — o conteúdo real é editado no Designer.
+
  - GSAP + ScrollTrigger agora carregam no **Custom Code do site** (Head), não mais por
  página — ver seção 5.1. O Custom Code da página FOPPA BITES só mantém o
  `<script src>` do `foppa-bites.min.js` (JS específico desta página); `style.min.css`,

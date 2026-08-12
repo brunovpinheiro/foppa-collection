@@ -1,0 +1,33 @@
+// ============================================================
+// Foppa — Dialog "Tabela Nutricional" (Client-First: .dialog-table)
+// FOPPA BITES: #btn-table-cacao / #btn-table-damasco / #btn-table-nozes
+// abrem #dialogTable mostrando o painel do sabor correspondente
+// (.dialog-table_item[data-table-flavor]).
+//
+// Mesmo padrão do dialog "Shop Now": é um <div> comum (não um <dialog>
+// nativo) — o Designer já resolve "display: none", o overlay em position
+// fixed e o layout do painel via classes. Abrir/fechar, troca de sabor e
+// toda a animação rodam em JS com GSAP (src/js/pages/foppa-bites.js).
+//
+// Este arquivo só cobre o que o Designer não expõe: dicas de performance
+// para as camadas animadas e o cursor dos gatilhos.
+// ============================================================
+
+#btn-table-cacao,
+#btn-table-damasco,
+#btn-table-nozes,
+#btnCloseDialogTable {
+	cursor: pointer;
+}
+
+.dialog-table {
+	will-change: opacity;
+}
+
+.dialog-table .dialog-table_panel {
+	will-change: opacity, transform;
+}
+
+.dialog-table .dialog-table_item {
+	will-change: opacity, transform;
+}

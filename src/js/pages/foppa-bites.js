@@ -5,6 +5,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 	initShopNowDialog();
+	initNutritionTableDialog();
 	initFaqAccordion();
 });
 
@@ -320,6 +321,193 @@ function initTypeSwitcher(dialog, dur) {
 			if (switchTimeline) switchTimeline.kill();
 		},
 	};
+}
+
+// Dialog "Tabela Nutricional": substitui os lightboxes nativos do Webflow,
+// que só mostravam a imagem da tabela e não aceitavam um rich text abaixo.
+// #dialogTable é um <div> comum (mesmo padrão do Shop Now — o Designer já
+// cuida do "display: none" e do overlay em position fixed), e dentro dele
+// existe um .dialog-table_item[data-table-flavor] por sabor, cada um com a
+// imagem da tabela + o rich text. Só o painel do sabor clicado fica visível.
+//
+// Os gatilhos são os links #btn-table-cacao / #btn-table-damasco /
+// #btn-table-nozes, que carregam o mesmo data-table-flavor do painel — é o
+// atributo, e não o id, que faz o pareamento (o id fica só como âncora
+// histórica/estilo). Cada botão é toggle: clicar de novo no mesmo botão
+// fecha; clicar em outro botão com o dialogo aberto troca o sabor exibido.
+function initNutritionTableDialog() {
+	const dialog = document.getElementById("dialogTable");
+	if (!dialog || typeof gsap === "undefined") return;
+
+	const panel = dialog.querySelector(".dialog-table_panel");
+	const closeBtn = dialog.querySelector("#btnCloseDialogTable");
+	const items = Array.from(dialog.querySelectorAll(".dialog-table_item[data-table-flavor]"));
+	const triggers = Array.from(document.querySelectorAll("[data-table-flavor]")).filter(
+		(el) => !dialog.contains(el)
+	);
+	if (!panel || !items.length || !triggers.length) return;
+
+	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const dur = (seconds) => (reduceMotion ? 0.001 : seconds);
+
+	// Ver nota em common.js (initMeetCeoDialog): com lenis.stop() ativo, o
+	// Lenis bloqueia scroll nativo de qualquer elemento sem esse atributo.
+	dialog.setAttribute("data-lenis-prevent", "");
+
+	// O dialogo é um "menu de sabores": os gatilhos anunciam que abrem um
+	// dialog, então quem usa leitor de tela sabe o que esperar do clique.
+	triggers.forEach((trigger) => trigger.setAttribute("aria-haspopup", "dialog"));
+
+	let isOpen = false;
+	let activeFlavor = null;
+	let timeline = null;
+	let opener = triggers[0];
+
+	// Base fechada: só o painel do sabor ativo é exibido. Como o estado
+	// inicial não tem sabor escolhido, todos começam escondidos.
+	items.forEach((item) => gsap.set(item, { display: "none", autoAlpha: 0, y: 0 }));
+
+	const getItem = (flavor) => items.find((item) => item.dataset.tableFlavor === flavor);
+
+	// focus() sem preventScroll (e o scroll-into-view do iOS) faz o overlay
+	// ou a página saltarem depois da animação — especialmente no mobile.
+	const focusWithoutScroll = (el) => {
+		if (!el) return;
+		const pageY = window.scrollY;
+		const dialogTop = dialog.scrollTop;
+		el.focus({ preventScroll: true });
+		if (window.scrollY !== pageY) window.scrollTo(0, pageY);
+		if (dialog.scrollTop !== dialogTop) dialog.scrollTop = dialogTop;
+	};
+
+	const lockPageScroll = () => {
+		document.documentElement.style.overflow = "hidden";
+		if (window.lenis) window.lenis.stop();
+	};
+	const unlockPageScroll = () => {
+		document.documentElement.style.overflow = "";
+		if (window.lenis) window.lenis.start();
+	};
+
+	// Exclusividade sem animação: usada ao abrir (o fade de entrada é do
+	// painel inteiro) e como reset depois de um kill() de timeline.
+	const showOnly = (flavor) => {
+		items.forEach((item) => {
+			const isActive = item === getItem(flavor);
+			gsap.set(item, { display: isActive ? "flex" : "none", autoAlpha: isActive ? 1 : 0, y: 0 });
+		});
+		activeFlavor = flavor;
+	};
+
+	// Troca de sabor com o dialogo já aberto: crossfade curto entre painéis,
+	// sem reabrir o overlay.
+	const switchTo = (flavor) => {
+		if (!flavor || flavor === activeFlavor) return;
+		const nextItem = getItem(flavor);
+		if (!nextItem) return;
+		const currentItem = getItem(activeFlavor);
+
+		if (timeline) timeline.kill();
+		items.forEach((item) => {
+			if (item !== nextItem && item !== currentItem) {
+				gsap.set(item, { display: "none", autoAlpha: 0, y: 0 });
+			}
+		});
+		activeFlavor = flavor;
+
+		timeline = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+		if (currentItem && currentItem !== nextItem) {
+			timeline
+				.to(currentItem, { autoAlpha: 0, y: 8, duration: dur(0.2) })
+				.set(currentItem, { display: "none", y: 0 });
+		}
+		timeline
+			.set(nextItem, { display: "flex", y: 8, autoAlpha: 0 })
+			.to(nextItem, { autoAlpha: 1, y: 0, duration: dur(0.3) });
+	};
+
+	const openDialog = (flavor, source) => {
+		if (!getItem(flavor)) return;
+		opener = source || opener;
+
+		if (isOpen) {
+			switchTo(flavor);
+			return;
+		}
+		isOpen = true;
+
+		if (timeline) timeline.kill();
+		showOnly(flavor);
+		lockPageScroll();
+		dialog.style.display = "flex";
+		dialog.scrollTop = 0;
+		dialog.setAttribute("aria-hidden", "false");
+
+		gsap.set(dialog, { autoAlpha: 0 });
+		gsap.set(panel, { autoAlpha: 0, y: 32, scale: 0.96 });
+
+		timeline = gsap.timeline({ defaults: { ease: "power3.out" } });
+		timeline
+			.to(dialog, { autoAlpha: 1, duration: dur(0.4) })
+			.to(panel, { autoAlpha: 1, y: 0, scale: 1, duration: dur(0.6) }, "-=0.25")
+			.eventCallback("onComplete", () => focusWithoutScroll(panel));
+	};
+
+	const closeDialog = () => {
+		if (!isOpen) return;
+		isOpen = false;
+
+		if (timeline) timeline.kill();
+		dialog.setAttribute("aria-hidden", "true");
+
+		timeline = gsap.timeline({
+			defaults: { ease: "power2.in" },
+			onComplete: () => {
+				dialog.style.display = "none";
+				activeFlavor = null;
+				items.forEach((item) => gsap.set(item, { display: "none", autoAlpha: 0, y: 0 }));
+				unlockPageScroll();
+				focusWithoutScroll(opener);
+			},
+		});
+		timeline
+			.to(panel, { autoAlpha: 0, y: 20, scale: 0.97, duration: dur(0.28) })
+			.to(dialog, { autoAlpha: 0, duration: dur(0.28) }, "-=0.16");
+	};
+
+	triggers.forEach((trigger) => {
+		trigger.addEventListener("click", (event) => {
+			event.preventDefault();
+			const flavor = trigger.dataset.tableFlavor;
+			// Toggle só vale pro botão do sabor que já está aberto; um botão
+			// diferente troca o conteúdo em vez de fechar.
+			if (isOpen && flavor === activeFlavor) {
+				closeDialog();
+				return;
+			}
+			openDialog(flavor, trigger);
+		});
+	});
+
+	if (closeBtn) {
+		closeBtn.addEventListener("click", closeDialog);
+		closeBtn.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			event.preventDefault();
+			closeDialog();
+		});
+	}
+
+	// Clique fora do painel (no overlay) fecha — o overlay preenche a tela e
+	// posiciona o painel via flexbox, então um clique direto nele (não em um
+	// filho) equivale a clicar fora do conteúdo.
+	dialog.addEventListener("click", (event) => {
+		if (event.target === dialog) closeDialog();
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && isOpen) closeDialog();
+	});
 }
 
 // Accordion do FAQ (.faq-list > .faq-item): cada item tem .faq-item_heading

@@ -18,7 +18,8 @@
       "mcp__webflow__data_pages_tool",
       "mcp__webflow__data_style_tool",
       "mcp__webflow__data_whtml_builder",
-      "mcp__webflow__element_snapshot_tool"
+      "mcp__webflow__element_snapshot_tool",
+      "mcp__webflow__data_element_settings_tool"
     ]
   }
 }
