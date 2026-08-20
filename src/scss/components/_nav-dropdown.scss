@@ -1,0 +1,28 @@
+// ============================================================
+// Navbar — dropdowns e seletor de idioma
+//
+// Só o que o Designer do Webflow não expressa: seletor :has() e
+// seletor de atributo (aria-expanded). Layout, cor e espaçamento
+// continuam 100% Designer/Client-First (classes nav_dropdown*,
+// locale-*, combos is-open / is-locale).
+// ============================================================
+
+// Desktop (acima do breakpoint medium, onde a navbar ainda é
+// horizontal): o dropdown de idioma mostra só as opções que NÃO são
+// a atual — o idioma ativo já aparece como rótulo do próprio toggle,
+// repeti-lo na lista só daria um item inerte. No mobile a regra não
+// vale: lá os idiomas ficam lado a lado, e ver o ativo (marcado pelo
+// Webflow com .w--current) é o que dá o contexto de qual está valendo.
+@media (min-width: 992px) {
+	.nav_dropdown_menu.is-locale .locale-item_wrapper:has(.w--current) {
+		display: none;
+	}
+}
+
+// Seta de expandir/colapsar dos submenus no drawer mobile: gira 180°
+// quando o submenu está aberto. O estado vive no aria-expanded do
+// toggle (o pai da seta), que o JS (initNavDropdowns, common.js) já
+// mantém sincronizado — nenhuma classe extra só para o CSS.
+[aria-expanded="true"] > .nav_dropdown_icon {
+	transform: rotate(180deg);
+}

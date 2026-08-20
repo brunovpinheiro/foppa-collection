@@ -229,6 +229,13 @@ function initNavDropdowns() {
 		if (!list || !toggle) return;
 
 		const isNavigable = toggle.tagName === "A" && toggle.hasAttribute("href");
+		// Seta ao lado do texto do pai: invisível no desktop (o hover já
+		// abre o submenu) e visível no drawer mobile, onde vira o único
+		// jeito de expandir/colapsar. Fica dentro do toggle de propósito
+		// (aria-hidden, sem tabindex/role): aninhar um botão de verdade
+		// dentro do <a> navegável seria HTML inválido. Aqui o clique nela
+		// é interceptado antes de virar navegação do link.
+		const icon = toggle.querySelector(".nav_dropdown_icon");
 
 		let closeTimeout;
 		const isOpen = () => list.classList.contains("is-open");
@@ -278,6 +285,12 @@ function initNavDropdowns() {
 				}
 			});
 		}
+
+		icon?.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			isOpen() ? close() : open();
+		});
 
 		document.addEventListener("click", (event) => {
 			if (isOpen() && !dropdown.contains(event.target)) close();
