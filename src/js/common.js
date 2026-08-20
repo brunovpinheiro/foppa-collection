@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initLenis();
 	initNavTheme();
 	initNavDropdowns();
+	initLocaleSwitcher();
 	initMeetCeoDialog();
 	initPhoneMasks();
 });
@@ -282,6 +283,33 @@ function initNavDropdowns() {
 			if (isOpen() && !dropdown.contains(event.target)) close();
 		});
 	});
+}
+
+// Seletor de idioma da navbar: o LocalesWrapper nativo do Webflow
+// (.locale-wrapper original) foi transformado em um dropdown reutilizando o
+// mesmo padrão dos outros menus da nav — wrapper .nav_dropdown > [toggle,
+// .nav_dropdown_menu] — então abrir/fechar já é responsabilidade do
+// initNavDropdowns() acima (hover no desktop, toque no toggle, Escape,
+// clique fora). No breakpoint medium (≤991px), onde a navbar vira o drawer
+// fullscreen, o .nav_dropdown_menu já é static/opacity 1 pelo Designer: a
+// lista de idiomas aparece embutida no menu, como as demais seções.
+// Aqui só resolvemos o rótulo do toggle (o idioma atual), que o Webflow não
+// expõe como elemento próprio: o link do locale ativo recebe .w--current na
+// página publicada; no Designer/Preview esse estado pode não existir, então
+// caímos para o atributo lang do <html>.
+function initLocaleSwitcher() {
+	const dropdown = document.querySelector("[data-locale-dropdown]");
+	if (!dropdown) return;
+
+	const label = dropdown.querySelector("[data-locale-current]");
+	const toggle = label?.closest("[aria-controls]");
+	if (!label) return;
+
+	const current = dropdown.querySelector(".w--current");
+	const tag = current?.getAttribute("hreflang") || document.documentElement.lang || "pt";
+
+	label.textContent = tag.slice(0, 2).toUpperCase();
+	toggle?.setAttribute("aria-label", `Idioma: ${label.textContent}. Selecionar idioma`);
 }
 
 // Dialog "Meet CEO": componente reutilizável (Webflow Component) presente
