@@ -17,3 +17,24 @@
 			background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 }
+
+// Drawer mobile aberto: a barra da navbar (.nav_component, normalmente
+// transparente) assume a MESMA cor de fundo do menu, para não sobrar uma
+// faixa transparente com o conteúdo da página aparecendo atrás do logo e
+// do hamburger enquanto o menu cobre a tela.
+//
+// A cor vem do próprio token que o .nav_menu usa no Designer
+// (Navbar/menu-open-background) — nada de hex hardcoded — então ela
+// acompanha automaticamente a variante Light/Dark que o initNavTheme
+// aplica no .nav_component.
+//
+// Fica aqui (e não no Designer) porque o estado "menu aberto" só existe
+// como classe que o próprio Webflow injeta em runtime (.w--nav-menu-open
+// no menu, .w--open no botão) e o Designer não permite estilizar um pai
+// a partir do estado de um filho (:has()).
+@media (max-width: 991px) {
+	.nav_component:has(.nav_menu.w--nav-menu-open),
+	.nav_component:has(.nav_button.w--open) {
+		background-color: var(--_components---navbar--menu-open-background);
+	}
+}
